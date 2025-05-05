@@ -5,7 +5,7 @@
 ### Using Public Key
 
 ```
-ssh-copy-id -f "-o IdentityFile <PATH TO PEM FILE>" ubuntu@<INSTANCE-PUBLIC-IP>
+ssh-copy-id -f "-o IdentityFile <PATH TO PEM FILE>" ubuntu(azureuser if azure)@<INSTANCE-PUBLIC-IP>
 ```
 
 THE DEFAULT VM USERNAME IN AZURE IS NOT ubuntu BUT azureuser BE WARY...

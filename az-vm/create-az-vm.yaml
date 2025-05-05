@@ -1,0 +1,65 @@
+- name: Create Azure VM
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Create virtual network
+      azure_rm_virtualnetwork:
+        resource_group: annamalai-rg
+        name: myVnet
+        address_prefixes: "10.0.0.0/16"
+
+    - name: Add subnet
+      azure_rm_subnet:
+        resource_group: annamalai-rg
+        name: mySubnet
+        address_prefix: "10.0.1.0/24"
+        virtual_network: myVnet
+
+    - name: Create public IP address
+      azure_rm_publicipaddress:
+        resource_group: annamalai-rg
+        allocation_method: Static
+        name: myPublicIP
+      register: output_ip_address
+
+    - name: Public IP of VM
+      debug:
+        msg: "The public IP is {{ output_ip_address.state.ip_address }}."
+
+    - name: Create Network Security Group that allows SSH
+      azure_rm_securitygroup:
+        resource_group: annamalai-rg
+        name: myNetworkSecurityGroup
+        rules:
+          - name: SSH
+            protocol: Tcp
+            destination_port_range: 22
+            access: Allow
+            priority: 1001
+            direction: Inbound
+
+    - name: Create virtual network interface card
+      azure_rm_networkinterface:
+        resource_group: annamalai-rg
+        name: myNIC
+        virtual_network: myVnet
+        subnet: mySubnet
+        public_ip_name: myPublicIP
+        security_group: myNetworkSecurityGroup
+
+    - name: Create VM
+      azure_rm_virtualmachine:
+        resource_group: annamalai-rg
+        name: myVM
+        vm_size: Standard_DS1_v2
+        admin_username: azureuser
+        ssh_password_enabled: false
+        ssh_public_keys:
+          - path: /home/azureuser/.ssh/authorized_keys
+            key_data: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCwwYmpla90uORYtDrqTrLDueWn4T8HNIH7dNodv58GJ7YarTtDtLKVJa4DX6XbZPnY8Fc16T0Db6mFOR6m9NGYlbXMi3tF7Ul13MQZqzkryH/748ksNFirBbklVC2sIIlUFDdxNeFjUGjxbGFVyPmyLdjeb+U5cHKhXZPeWPV+eWlsnwr6VgfN2xlsmSUeYK272PWXv/qubJdCuF4TfMMSwJx8m0f4zT2WCE6wpnuy27pDyOqrLANoV0uH2KfTYuH17GQQmFjWSegjV+o8u8CZ9UGRu2duYH0MPbYjXLaL7GgKVn8VNDZ+ufUoGrWtMFdHBx3sak02Bxfb5GAgIHjyP/aaQjZceJ9ZhujdQ7VWMfSJ0NDhH7MB1HONKcTnce8EZCKGUH1pffAXgJ5p8eMX521R9Ro7/feoamvGwzO4VpPX4NftO5RPTm02xYYiWq9Pnr4Jx7+tOXY8cvX9WJWNVDMWxAqCwenwMaTEoj5gUbQBiaoQCcS1z2wBG+3QLzK+zE+fPD9rOkQ5+FsDl23+rfoShev6zhYV5g9XaMYFoWbKneoyWr0wym2yKgE7bYm0v0Jtz9GxE3eMl155zyk5CumjgYbhH7IcsFaj6SFAlKd9p9LHo3MtxY3CHE9EZ2UWUTMj65OyYhYmlpn5notyD7x0owREewnzeXPU70EXLw== apfossdev_corp@INBANGNBLENTP22"  # <-- Replace with actual key
+        network_interfaces: myNIC
+        image:
+          offer: 0001-com-ubuntu-server-jammy
+          publisher: Canonical
+          sku: 22_04-lts
+          version: latest
